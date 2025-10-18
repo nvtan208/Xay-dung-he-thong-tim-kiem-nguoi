@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tìm kiếm người bằng mô tả</title>
+  <style>
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f2f4f8;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 40px auto;
+      background: #fff;
+      padding: 30px 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 25px;
+    }
+
+    .search-box {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 25px;
+      gap: 10px;
+    }
+
+    #search-input {
+      flex-grow: 1;
+      max-width: 600px;
+      padding: 12px 16px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      outline: none;
+      transition: border-color 0.2s ease-in-out;
+    }
+
+    #search-input:focus {
+      border-color: #007bff;
+    }
+
+    #search-button {
+      padding: 12px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.2s ease-in-out;
+    }
+
+    #search-button:hover {
+      background-color: #0056b3;
+    }
+
+    #loading {
+      text-align: center;
+      font-size: 16px;
+      color: #555;
+      display: none;
+      margin-top: 10px;
+    }
+
+    #results {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 20px;
+      margin-top: 25px;
+    }
+
+    .result-item {
+      position: relative;
+      overflow: hidden;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .result-item:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    }
+
+    .result-item img {
+      width: 100%;
+      height: auto;
+      display: block;
+      object-fit: contain;
+      background-color: #fafafa;
+    }
+
+    @media (max-width: 600px) {
+      #search-input {
+        width: 100%;
+      }
+
+      #search-button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>🔍 Hệ thống tìm kiếm người bằng mô tả</h1>
+    <div class="search-box">
+      <input type="text" id="search-input" placeholder="Nhập mô tả, ví dụ: a man wearing a red shirt...">
+      <button id="search-button">Tìm kiếm</button>
+    </div>
+    <div id="loading">⏳ Đang tìm kiếm...</div>
+    <div id="results"></div>
+  </div>
+
+  <script>
+    const searchButton = document.getElementById('search-button');
+    const searchInput = document.getElementById('search-input');
+    const resultsDiv = document.getElementById('results');
+    const loadingDiv = document.getElementById('loading');
+    const API_URL = 'http://127.0.0.1:5000/search';
+
+    const performSearch = async () => {
+      const query = searchInput.value.trim();
+      if (!query) {
+        alert('Vui lòng nhập mô tả!');
+        return;
+      }
+
+      loadingDiv.style.display = 'block';
+      resultsDiv.innerHTML = '';
+
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: query, top_k: 20 })
+        });
+
+        if (!response.ok) throw new Error(`Lỗi từ server: ${response.statusText}`);
+        const data = await response.json();
+        displayResults(data.results);
+
+      } catch (error) {
+        console.error('Lỗi khi tìm kiếm:', error);
+        resultsDiv.innerHTML = `<p style="color: red;">Đã xảy ra lỗi. Vui lòng thử lại.</p>`;
+      } finally {
+        loadingDiv.style.display = 'none';
+      }
+    };
+
+    const displayResults = (imagePaths) => {
+      if (imagePaths.length === 0) {
+        resultsDiv.innerHTML = '<p>Không tìm thấy kết quả phù hợp.</p>';
+        return;
+      }
+
+      imagePaths.forEach(p => {
+        const div = document.createElement('div');
+        div.classList.add('result-item');
+
+        const img = document.createElement('img');
+        img.src = `http://127.0.0.1:5000/${p}`;
+        img.alt = 'Kết quả tìm kiếm';
+        img.onclick = () => window.open(img.src, '_blank'); // mở ảnh lớn khi click
+
+        div.appendChild(img);
+        resultsDiv.appendChild(div);
+      });
+    };
+
+    searchButton.addEventListener('click', performSearch);
+    searchInput.addEventListener('keypress', e => {
+      if (e.key === 'Enter') performSearch();
+    });
+  </script>
+</body>
+
+</html>
